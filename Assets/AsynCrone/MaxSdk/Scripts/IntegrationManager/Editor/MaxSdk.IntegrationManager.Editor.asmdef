@@ -1,0 +1,18 @@
+{
+    "name": "MaxSdk.Scripts.IntegrationManager.Editor",
+    "rootNamespace": "",
+    "references": [
+        "MaxSdk.Scripts"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": true,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

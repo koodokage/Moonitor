@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: e1ff7906b870d48f2b6f2dd5e4579aba
+labels:
+- al_max
+- al_max_export_path-MaxSdk/Scripts/ATunnel/Data/Enums/TransmisionAction.cs
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

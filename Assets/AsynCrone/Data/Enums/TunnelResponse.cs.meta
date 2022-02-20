@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 318426c4d895b44329b8e5f1c4c7bb90
+labels:
+- al_max
+- al_max_export_path-MaxSdk/Scripts/ATunnel/Data/Enums/TunnelResponse.cs
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

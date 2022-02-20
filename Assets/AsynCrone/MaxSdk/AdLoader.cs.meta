@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: ce15952dcb3604c4ebc021ffeb7d8036
+labels:
+- al_max
+- al_max_export_path-MaxSdk/AD_LoadManager.cs
+- al_max_export_path-MaxSdk/AdLoader.cs
+- al_max_export_path-MaxSdk/Scripts/AD_LoadManager.cs
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

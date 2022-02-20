@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: a356b8111ccd64a25a0fd7ecbaf97769
+labels:
+- al_max
+- al_max_export_path-MaxSdk/Scripts/ATunnel/Modules/IPN_API.cs
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
