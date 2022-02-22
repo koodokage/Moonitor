@@ -2,41 +2,47 @@ using System.Diagnostics;
 using AsCrone.Module;
 using TMPro;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
 namespace AsCrone.Transmision
 {
-#if UNITY_EDITOR
-    [CustomEditor(typeof(CronePerformer), true), CanEditMultipleObjects]
-    public class CronePerformerEditor : Editor
-    {
 
-        public override void OnInspectorGUI()
-        {
-            base.OnInspectorGUI();
-            CronePerformer data = (CronePerformer)target;
+//#if UNITY_EDITOR
+//    [CustomEditor(typeof(CronePerformer), true), CanEditMultipleObjects]
+//    public class CronePerformerEditor : Editor
+//    {
 
-            if (GUILayout.Button("START LEVEL"))
-            {
-                data.SendUpdateRewarded();
-            }
-            if (GUILayout.Button("STOP LEVEL"))
-            {
-                data.Stop();
-            }
-        }
+//        public override void OnInspectorGUI()
+//        {
+//            base.OnInspectorGUI();
+//            CronePerformer data = (CronePerformer)target;
 
-    }
-#endif
+//            if (GUILayout.Button("START LEVEL"))
+//            {
+//                data.SendUpdateRewarded();
+//            }
+//            if (GUILayout.Button("STOP LEVEL"))
+//            {
+//                data.Stop();
+//            }
+//        }
+
+//    }
+//#endif
+
     public class CronePerformer : MonoBehaviour
     {
         [Tooltip("Network Send-Response (ECHO) Speed")] public float NetworkSpeed_MS;
-        [SerializeField] private ResponseData remoteResponse;
+        [SerializeField] private AsynCroner croner;
         [SerializeField] DataLake dataBlock;
+        private ResponseData remoteResponse;
+        public byte[] regData; 
         private Stopwatch pingWatch;
-        internal string PlayerID { get => dataBlock.PlayerGuid; set => dataBlock.PlayerGuid = value; }
+        internal string PlayerID { get => dataBlock.BSID; set => dataBlock.BSID = value; }
         internal DataLake SetDataLake { set => dataBlock = value; }
+
 
         private void Initialization()
         {
@@ -47,17 +53,22 @@ namespace AsCrone.Transmision
                 return;
             }
             dataBlock.OnAwake();
+            BuildRegisterData();
+         
         }
 
         private void Start()
         {
-            AsynCroner.SetCronePerformer(this);
+            DontDestroyOnLoad(gameObject);
+            croner = new AsynCroner();
+            croner.OnStart(this);
+            CroneAPI._CronePerformer = this;
             Initialization();
         }
 
         private void OnDisable()
         {
-            //Save Datalake
+            croner.Dispose();
         }
 
         public ResponseData ExecuteResponseChain
@@ -87,11 +98,11 @@ namespace AsCrone.Transmision
                     case TunnelResponse.Pong:
                         Response_OnPinged();
                         break;
-
                 }
 
             }
         }
+
 
         private void Response_OnPinged()
         {
@@ -102,7 +113,7 @@ namespace AsCrone.Transmision
             if (dataBlock.IsNew)
             {
 
-                PlayerID = remoteResponse.ATunnel_ID;
+                PlayerID = remoteResponse.BSID;
 
                 if (PlayerID == string.Empty)
                 {
@@ -141,11 +152,73 @@ namespace AsCrone.Transmision
             byte[] identifierBuffer = BytobConverter<ITransmitorData>.ObjectToByteArray(requestData);
             dataBlock.SaveInQueue(identifierBuffer);
         }
-
         public void Ping()
         {
             pingWatch = new Stopwatch();
             pingWatch.Start();
+        }
+        public void SetCompanyId(string companyId)
+        {
+            dataBlock.SetCompanyid(companyId);
+        }
+        public void ExecuteWatcher(StopWatchSubject subject)
+        {
+            dataBlock.ExecuteAStopwatch(subject);
+        }
+        public void SetAdStates_NotReady(AdsType type)
+        {
+            switch (type)
+            {
+                case AdsType.Interstial:
+                    dataBlock.ADSInterstitial_NotReadyCount++;
+                    break;
+                case AdsType.Rewarded:
+                    dataBlock.ADSRewarded_NotReadyCount++;
+                    break;
+            }
+        }
+        public void SetAdStates_LoadStarted(AdsType type)
+        {
+            switch (type)
+            {
+                case AdsType.Interstial:
+                    dataBlock.ADSInterstitial_startedCount++;
+                    break;
+                case AdsType.Rewarded:
+                    dataBlock.ADSRewarded_startedCount++;
+                    break;
+            }
+        }
+        public void SetAdStates_Success(AdsType type)
+        {
+            switch (type)
+            {
+                case AdsType.Interstial:
+                    dataBlock.ADSInterstitial_successCount++;
+                    break;
+                case AdsType.Rewarded:
+                    dataBlock.ADSRewarded_successCount++;
+                    break;
+                case AdsType.Banner:
+                    dataBlock.ADSBanner_successCount++;
+                    break;
+            }
+        }
+        public void SetDataRevenue(double amount)
+        {
+            dataBlock.Paid_Revenue = amount;
+        }
+        public void SetMainLevelData(int mainLevel)
+        {
+            dataBlock.Sub_level = -1;
+            dataBlock.MainLevel = mainLevel;
+            ExecuteWatcher(StopWatchSubject.MainLevel);
+        }
+        public void SetSubLevelData(int subLevel)
+        {
+            dataBlock.MainLevel = -1;
+            dataBlock.Sub_level = subLevel;
+            ExecuteWatcher(StopWatchSubject.SubLevel);
         }
         public bool QueueCount()
         {
@@ -156,7 +229,15 @@ namespace AsCrone.Transmision
             return false;
 
         }
+        public bool RegisteredGame()
+        {
+            if (dataBlock.IsNew)
+            {
+                return true;
+            }
+            return false;
 
+        }
         public byte[] GetDataInQueue()
         {
             return dataBlock.requestQueue.Dequeue();
@@ -165,7 +246,6 @@ namespace AsCrone.Transmision
         {
             dataBlock.SaveInQueue_NotReachable(dataNotSended);
         }
-
         private void Pong()
         {
             if (pingWatch == null)
@@ -176,17 +256,18 @@ namespace AsCrone.Transmision
             pingWatch = null;
         }
 
+        #region DATA PERFORMS
         private void PrepareToSend(TransmisionAction ttAction)
         {
+            if (ttAction == TransmisionAction.Register)
+                return;
+
             ITransmitorData dataOnSend = null;
 
             switch (ttAction)
             {
                 case TransmisionAction.Ping:
                     dataOnSend = PerformPingPongAction();
-                    break;
-                case TransmisionAction.Register:
-                    dataOnSend = PerformRegisterAction();
                     break;
                 case TransmisionAction.UpdateAdStates:
                 case TransmisionAction.UpdateRevenue:
@@ -203,17 +284,20 @@ namespace AsCrone.Transmision
                 return;
             }
 
-            if (dataBlock.IsNew)
-            {
-                dataOnSend = PerformRegisterAction();
-                BytedDataToQueue(dataOnSend);
-                return;
-            }
+            
 
             BytedDataToQueue(dataOnSend);
 
         }
-
+        public void BuildRegisterData()
+        {
+            if (dataBlock.IsNew)
+            {
+                var dataOnRegSend = PerformRegisterAction();
+                regData = BytobConverter<ITransmitorData>.ObjectToByteArray(dataOnRegSend);
+                return;
+            }
+        }
         public byte[] PrepareToGetDataBytes(TransmisionAction ttAction)
         {
             ITransmitorData dataOnSend = null;
@@ -298,11 +382,12 @@ namespace AsCrone.Transmision
             PingData request =  new PingData(TransmisionAction.Ping,PlayerID , string.Empty , true);
             return request;
         }
+        #endregion 
 
         internal void Packed_CallBack(TransmisionAction transmisionAction)
         {
             //ChekConnection
-            if (AsynCroner.rigidConnected)
+            if (croner.rigidConnected)
             {
                 PrepareToSend(transmisionAction);
             }
@@ -317,7 +402,7 @@ namespace AsCrone.Transmision
         {
             TransmisionAction action = TransmisionAction.UpdateLevel;
 
-            if (AsynCroner.rigidConnected)
+            if (croner.rigidConnected)
             {
                 PrepareToSend(action);
             }
@@ -327,7 +412,6 @@ namespace AsCrone.Transmision
                 dataBlock.SaveInQueue_NotReachable(readyToQueue);
             }
         }
-
 
         //TEST
         internal void SendUpdateRewarded()

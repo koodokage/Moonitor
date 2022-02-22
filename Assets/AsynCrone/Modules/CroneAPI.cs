@@ -2,6 +2,7 @@ using AsCrone.Module;
 using AsCrone.Transmision;
 namespace AsCrone
 {
+
     public static class CroneAPI
     {
         private const int Clock_AdStateTick = 3;
@@ -12,8 +13,8 @@ namespace AsCrone
         private static AsynCroneEvents asynCroneEventler;
         public static AsynCroneEvents CroneEnventHandler { get => asynCroneEventler; set => asynCroneEventler = value; }
 
-        private static DataLake dataBlock;
-        public static DataLake DataBlock { get => dataBlock; set => dataBlock = value; }
+        private static CronePerformer _cronePerformer;
+        public static CronePerformer _CronePerformer { get => _cronePerformer; set => _cronePerformer = value; }
 
         public static void SetCompanyId(string companyId,bool inTestMode)
         {
@@ -22,48 +23,30 @@ namespace AsCrone
                 companyId = "TESTMODE";
             }
 
-            dataBlock.SetCompanyid(companyId);
+            _CronePerformer.SetCompanyId(companyId);
         }
 
 
         public static void CallTimeTracker(StopWatchSubject watchSubject)
         {
-            dataBlock.ExecuteAStopwatch(watchSubject);
+            _CronePerformer.ExecuteWatcher(watchSubject);
         }
 
 
 
         public static void OnDataNotReady(AdsType type)
         {
-            switch (type)
-            {
-                case AdsType.Interstial:
-                    dataBlock.ADSInterstitial_NotReadyCount++;
-                    break;
-                case AdsType.Rewarded:
-                    dataBlock.ADSRewarded_NotReadyCount++;
-                    break;
 
-            }
-
+            _CronePerformer.SetAdStates_NotReady(type);
             Tick_AdState++;
             CheckTick(Tick_AdState, Clock_AdStateTick, TransmisionAction.UpdateAdStates);
-
 
         }
 
         public static void OnDataStarted(AdsType type)
         {
-            switch (type)
-            {
-                case AdsType.Interstial:
-                    dataBlock.ADSInterstitial_startedCount++;
-                    break;
-                case AdsType.Rewarded:
-                    dataBlock.ADSRewarded_startedCount++;
-                    break;
+            _CronePerformer.SetAdStates_LoadStarted(type);
 
-            }
             Tick_AdState++;
             CheckTick(Tick_AdState, Clock_AdStateTick, TransmisionAction.UpdateAdStates);
 
@@ -72,18 +55,8 @@ namespace AsCrone
 
         public static void OnDataSuccess(AdsType type)
         {
-            switch (type)
-            {
-                case AdsType.Interstial:
-                    dataBlock.ADSInterstitial_successCount++;
-                    break;
-                case AdsType.Rewarded:
-                    dataBlock.ADSRewarded_successCount++;
-                    break;
-                case AdsType.Banner:
-                    dataBlock.ADSBanner_successCount++;
-                    break;
-            }
+            _CronePerformer.SetAdStates_Success(type);
+
             Tick_AdState++;
             CheckTick(Tick_AdState,Clock_AdStateTick,TransmisionAction.UpdateAdStates);
         }
@@ -91,34 +64,22 @@ namespace AsCrone
 
         public static void OnDataRevene(double revenue)
         {
-            dataBlock.Paid_Revenue = revenue;
+            _CronePerformer.SetDataRevenue(revenue);
             Tick_Revenue++;
             CheckTick(Tick_Revenue, Clock_RevenueTick,TransmisionAction.UpdateRevenue);
         }
 
-        public static void BakedDataVpn()
-        {
-            if (dataBlock.VpnState == true)
-            {
-                dataBlock.ExecuteWebApiRequest();
-            }
-        }
-
         public static void CallLevelTracker(bool isMainLevel , int mainLevel , int subLevel)
         {
-            CroneEnventHandler.OnLevelFinished += AsynCroner.CronePerforms.LevelPacked_InEventCallBack;
+            CroneEnventHandler.OnLevelFinished += _CronePerformer.LevelPacked_InEventCallBack;
 
             if (isMainLevel)
             {
-                dataBlock.MainLevel = mainLevel;
-                dataBlock.Sub_level = -1;
-                dataBlock.ExecuteAStopwatch(StopWatchSubject.MainLevel);
+                _CronePerformer.SetMainLevelData(mainLevel);
             }
             else
             {
-                dataBlock.MainLevel = -1;
-                dataBlock.Sub_level = subLevel;
-                dataBlock.ExecuteAStopwatch(StopWatchSubject.SubLevel);
+                _CronePerformer.SetMainLevelData(subLevel);
             }
         }
 
@@ -132,7 +93,7 @@ namespace AsCrone
         {
             if (tick > tickClock)
             {
-                AsynCroner.CronePerforms.Packed_CallBack(action);
+                _CronePerformer.Packed_CallBack(action);
             }
         }
 

@@ -7,8 +7,8 @@ namespace AsCrone.Transmision
     {
 
         public TransmisionAction transmisionAction { get; set; }
-        public string ATunnel_ID { get; set; }
-        public string ATunnel_IP { get; set; }
+        public string BSID { get; set; }
+        public string CIP { get; set; }
         public string GameCollectionName { get; set; } // GAMEID_vAPPREALEASEVERSION
         public string GameDbName { get; set; } // OS_COMPANYNAME
         public string DeviceOS { get; set; }
@@ -17,14 +17,14 @@ namespace AsCrone.Transmision
         //---------PAID INFO--------------//
         public int Session;
         public double TotalSessioned { get; set; }
-        public double SessionPlayTime { get; set; }
+        public int SessionPlayTime { get; set; }
         public double TotalPlayedTime { get; set; }
         public bool Queued { get; set; }
         public UpdateSessionData(TransmisionAction transmisionAction, ref DataLake dataBlock)
         {
             this.transmisionAction = transmisionAction;
-            ATunnel_ID = dataBlock.PlayerGuid ;
-            ATunnel_IP = string.Empty;
+            BSID = dataBlock.BSID ;
+            CIP = string.Empty;
             GameCollectionName = dataBlock.GameCollectionName;
             GameDbName = dataBlock.GameStockName;
             Day = dataBlock.Day;

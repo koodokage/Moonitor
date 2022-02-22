@@ -3,37 +3,36 @@ using System.Net.Sockets;
 using System.Threading;
 using AsCrone.Module;
 using AsCrone.Transmision;
+using UnityEngine;
+using Debug = UnityEngine.Debug;
 
 namespace AsCrone
 {
-    public static class AsynCroner 
+    [Serializable]
+    public  class AsynCroner 
     {
-        private static ResponseData remoteResponse;
-        private static CronePerformer cronePerformer;
+        [SerializeField]private  ResponseData remoteResponse;
+        private  CronePerformer cronePerformer;
 
-        public static bool rigidConnected;
-        static bool callBacked = false;
+        public  bool rigidConnected;
+        public bool callBacked = false;
+        public bool threadCanceled = false;
 
         const string _ADRESS = "213.159.7.193";
         const int _SLOT = 3001;
 
-        static TcpClient _client;
-        static Thread threadReceiver;
-        static byte[] dataBlock = new byte[2056];
-        static byte[] sendingBuffer = null;
+         TcpClient _client;
+         Thread threadReceiver;
+         byte[] dataBlock = new byte[2056];
+         byte[] sendingBuffer = null;
 
-        public static ResponseData RemoteResponse { get => remoteResponse; }
-        public static CronePerformer CronePerforms { get => cronePerformer; }
+        public  ResponseData RemoteResponse { get => remoteResponse; }
+        public  CronePerformer CronePerforms { get => cronePerformer; }
 
-        public static void SetCronePerformer(CronePerformer value)
+         public void OnStart(CronePerformer _cronePerformer)
         {
-            cronePerformer = value;
-            OnStart();
-        }
+            this.cronePerformer = _cronePerformer;
 
-        static void OnStart()
-        {
-            _client = new TcpClient();
             callBacked = true;
             StartAsyncCrone();
 
@@ -43,9 +42,10 @@ namespace AsCrone
 
         }
 
-        static void JOB_Charger()
+        void JOB_Charger()
         {
-            while (true)
+            int connectionAttempt = 0;
+            while (!threadCanceled)
             {
                 try
                 {
@@ -58,22 +58,28 @@ namespace AsCrone
                 catch
                 {
                     StartAsyncCrone();
-                    //ConsoleLog("Try Connection");
                     rigidConnected = false;
                 }
 
-
-                while (rigidConnected)
+                while (rigidConnected && !threadCanceled)
                 {
                     Thread.Sleep(200);
+
                     if (IsBack())
                     {
-                        if (cronePerformer.QueueCount())
+                        if (cronePerformer.RegisteredGame() == true)
+                        {
+                            sendingBuffer = cronePerformer.regData;
+                            connectionAttempt = 0;
+                        }
+                        else if (cronePerformer.QueueCount())
                         {
                             sendingBuffer = cronePerformer.GetDataInQueue();
                         }
                         else
+                        {
                             continue;
+                        }
 
 
                         try
@@ -85,14 +91,28 @@ namespace AsCrone
                                 networkStream.Write(sendingBuffer, 0, sendingBuffer.Length);
                                 cronePerformer.Ping();
                                 callBacked = false;
+
                             }
                         }
                         catch (Exception)
                         {
                             //ConsoleLog($"Send Phase Fail {ex.Message}");
-                            cronePerformer.ReturnDataInQueue(sendingBuffer);
+                            if(sendingBuffer != null && cronePerformer.RegisteredGame())
+                                cronePerformer.ReturnDataInQueue(sendingBuffer);
                             break;
                         }
+                    }
+                    else
+                    {
+                        Thread.Sleep(1000);
+                        connectionAttempt++;
+                        if(connectionAttempt >= 5)
+                        {
+                            rigidConnected = false;
+                            callBacked = true;
+                            _client.Close();
+                        }
+
                     }
 
 
@@ -108,7 +128,7 @@ namespace AsCrone
         //    Debug.Log($">_ [{message}]");
         //}
 
-        static bool IsBack()
+        bool IsBack()
         {
             if (callBacked)
             {
@@ -117,19 +137,13 @@ namespace AsCrone
             return false;
         }
 
-        static void StartAsyncCrone()
+        void StartAsyncCrone()
         {
-            try
-            {
+            _client = new TcpClient();
                 _client.BeginConnect(_ADRESS, _SLOT, new AsyncCallback(AcceptingCallback), _client);
-            }
-            catch
-            {
-                //ConsoleLog($"Connection Breaked");
-            }
         }
 
-        static void AcceptingCallback(IAsyncResult asyncResult)
+        void AcceptingCallback(IAsyncResult asyncResult)
         {
             TcpClient Tclient = (TcpClient)asyncResult.AsyncState;
             Tclient.EndConnect(asyncResult);
@@ -137,28 +151,28 @@ namespace AsCrone
             networkStream.BeginRead(dataBlock, 0, dataBlock.Length, new AsyncCallback(ReceivingCallback), Tclient);
         }
 
-        static void ReceivingCallback(IAsyncResult asyncResult)
+        void ReceivingCallback(IAsyncResult asyncResult)
         {
             TcpClient Tclient = (TcpClient)asyncResult.AsyncState;
             remoteResponse = BytobConverter<ResponseData>.ByteArrayToObject(dataBlock);
             NetworkStream networkStream = Tclient.GetStream();
             networkStream.BeginRead(dataBlock, 0, dataBlock.Length, new AsyncCallback(ReceivingCallback), Tclient);
-
+            Debug.Log($"READ : {remoteResponse.response}");
             callBacked = true;
             cronePerformer.ExecuteResponseChain = remoteResponse;
         }
 
-        public static void Dispose()
+        public void Dispose()
         {
+            _client.Close();
+
             if (threadReceiver != null)
             {
                 if (threadReceiver.IsAlive)
                 {
-                    threadReceiver.Abort();
-
+                    threadCanceled = true;
                 }
             }
-            _client.Close();
         }
     }
 }

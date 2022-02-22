@@ -9,7 +9,7 @@ namespace AsCrone.Module
         {
             DateTime localizedDate = DateTime.Parse(localDateTime);
             TimeSpan diffResult = DateTime.Now.Date - localizedDate.Date;
-            int dayCount = (int)Math.Round(diffResult.TotalDays) + 1;
+            int dayCount = (int)Math.Round(diffResult.TotalDays);
             return dayCount;
         }
     }

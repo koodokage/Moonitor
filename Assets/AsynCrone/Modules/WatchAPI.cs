@@ -29,37 +29,41 @@ public class WatchAPI : MonoBehaviour
                 break;
             case StopWatchSubject.MainLevel:
             case StopWatchSubject.SubLevel:
-                CroneAPI.CroneEnventHandler.OnLevelFinished += Close;
+                CroneAPI.CroneEnventHandler.OnLevelFinished += Close_API;
                 break;
         }
 
         transform.name = $"{subject}-API";
     }
 
-    public void Close()
+    public void Close_API()
     {
         switch (subject)
         {
             case StopWatchSubject.Session:
-                dataBlock.SessionPlayTimme = stopwatch.ElapsedMilliseconds;
+                dataBlock.SessionPlayTimme = stopwatch.Elapsed.Seconds;
                 break;
             case StopWatchSubject.MainLevel:
-                dataBlock.MainLevelTime = stopwatch.ElapsedMilliseconds;
+                dataBlock.MainLevelTime = stopwatch.Elapsed.Seconds;
                 break;
             case StopWatchSubject.SubLevel:
-                dataBlock.Sub_levelTime = stopwatch.ElapsedMilliseconds;
+                dataBlock.Sub_levelTime = stopwatch.Elapsed.Seconds;
                 break;
         }
-        Debug.Log($"LEVEL PLAYTIME : {stopwatch.ElapsedMilliseconds}");
         stopwatch.Stop();
         gameObject.SetActive(false);
+    }
+
+    private void OnDisable()
+    {
+        Close_API();
     }
 
     private void OnDestroy()
     {
         if(subject != StopWatchSubject.Session)
-            CroneAPI.CroneEnventHandler.OnLevelFinished -= Close;
+            CroneAPI.CroneEnventHandler.OnLevelFinished -= Close_API;
 
-        CroneAPI.CroneEnventHandler.OnLevelFinished -= AsynCroner.CronePerforms.LevelPacked_InEventCallBack;
+        CroneAPI.CroneEnventHandler.OnLevelFinished -= CroneAPI._CronePerformer.LevelPacked_InEventCallBack;
     }
 }

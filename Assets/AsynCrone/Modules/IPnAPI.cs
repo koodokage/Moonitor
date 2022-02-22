@@ -38,34 +38,38 @@ namespace AsCrone.Module
              * 
              */
 
-            UnityWebRequest webRequest = UnityWebRequest.Get("http://ip-api.com/json/?fields=country,hosting");
-
-            yield return webRequest.SendWebRequest();
-
-            if (webRequest.result == UnityWebRequest.Result.ConnectionError)
+            while (true)
             {
-                dataBlock.Country = string.Empty;
-                Debug.Log("EMPTY");
-                yield return new WaitForEndOfFrame();
-                //Destroy(gameObject);
+                UnityWebRequest webRequest = UnityWebRequest.Get("http://ip-api.com/json/?fields=country,hosting");
+
+                yield return webRequest.SendWebRequest();
+
+                if (webRequest.result == UnityWebRequest.Result.ConnectionError)
+                {
+                    dataBlock.Country = string.Empty;
+                    Debug.Log("EMPTY");
+                    yield return new WaitForEndOfFrame();
+                }
+                else if (webRequest.isDone || webRequest.result == UnityWebRequest.Result.Success)
+                {
+                    Country format = JsonUtility.FromJson<Country>(webRequest.downloadHandler.text);
+
+                    Country countryData = new Country();
+                    countryData.country = format.country;
+                    countryData.hosting = format.hosting;
+
+                    countryName = countryData.country;
+                    chekVpn = countryData.hosting;
+
+                    dataBlock.Country = countryName;
+                    dataBlock.VpnState = chekVpn;
+
+                    yield return new WaitForEndOfFrame();
+                    break;
+                }
             }
-            else if (webRequest.isDone || webRequest.result == UnityWebRequest.Result.Success)
-            {
-                Country format = JsonUtility.FromJson<Country>(webRequest.downloadHandler.text);
-
-                Country countryData = new Country();
-                countryData.country = format.country;
-                countryData.hosting = format.hosting;
-
-                countryName = countryData.country;
-                chekVpn = countryData.hosting;
-
-                dataBlock.Country = countryName;
-                dataBlock.VpnState = chekVpn;
-
-                yield return new WaitForEndOfFrame();
-                //Destroy(gameObject);
-            }
+            yield return  null;
+            Destroy(gameObject);
 
         }
 

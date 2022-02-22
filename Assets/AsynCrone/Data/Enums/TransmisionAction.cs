@@ -9,6 +9,7 @@
         UpdateRevenue,
         UpdateLevel,
         UpdateSession,
-        UpdateVpn
+        UpdateVpn,
+        Delete
     }
 }

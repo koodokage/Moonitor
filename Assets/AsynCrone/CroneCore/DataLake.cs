@@ -1,9 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using AsCrone.Module;
 using AsCrone.Transmision;
 using BSS;
-using TMPro;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
@@ -11,36 +12,30 @@ namespace AsCrone
 {
     public class DataLake : SO_Data
     {
-        GameObject locater = null;
         Dictionary<StopWatchSubject, GameObject> stopWatchs = new Dictionary<StopWatchSubject, GameObject>();
         internal Queue<byte[]> requestQueue = new Queue<byte[]>();
-
         internal void OnAwake()
         {
-            sessionElapsedMs = 0;
-            CroneAPI.DataBlock = this;
-            ExecuteAStopwatch(StopWatchSubject.Session);
+            sessionElapsedSec = 0;
             ExecuteActionManager();
+            ExecuteAStopwatch(StopWatchSubject.Session);
 
             //LoadLocalData();
 
             // LOAD DATA
 
+            if (string.IsNullOrEmpty(Country))
+                ExecuteWebApiRequest();
 
             if (IsNewGame)
             {
                 var saltDate = string.Format("{0:dd-MM-yyyy}", DateTime.UtcNow);
                 AppDownloadedDate = saltDate;
                 AppDownloadedDate_Local = DateTime.Now.ToString();
-                ExecuteWebApiRequest();
+
                 IsNewGame = false;
             }
 
-            // Api is not acomplished?
-            if (Country == string.Empty)
-            {
-                ExecuteWebApiRequest();
-            }
 
             CroneAPI.SetCompanyId("PAN", true);
             GetGameid();
@@ -48,8 +43,8 @@ namespace AsCrone
             GetReleaseVersion();
             GetOS_Mobile();
 
-
             DailySessionCount++;
+            Debug.Log($"DAY : {Day}");
 
             // SAVE DATA
             //SaveLocalData();
@@ -65,10 +60,10 @@ namespace AsCrone
         public override void ResetData()
         {
             base.ResetData();
-            fileName = "TDB";
+            fileName = "Dlake";
             Country = string.Empty;
             GroupOfTest = string.Empty;
-            PlayerGuid = string.Empty;
+            BSID = string.Empty;
             isNew = true;
             IsNewGame = true;
             GameId = string.Empty;
@@ -84,7 +79,7 @@ namespace AsCrone
             MainLevel = 0;
             MainLevelTime = 0;
             sub_levelTime = 0;
-            sessionElapsedMs = 0;
+            sessionElapsedSec = 0;
             LastSavedDay = 0;
             TotalPlayTime = 0;
             TotalRevenue = 0;
@@ -110,7 +105,7 @@ namespace AsCrone
         [Serializable]
         public struct StructedData : IData
         {
-            public Queue<byte[]> userRequests;
+            public List<byte[]> userRequests;
             public bool userisNew;
             public bool appisNew;
             public string userID;
@@ -139,17 +134,22 @@ namespace AsCrone
                 structed.SaveLogDay = LastSavedDay;
                 DailySessionCount = 0;
             }
-            structed.userRequests = requestQueue;
+
+            structed.userRequests = requestQueue.ToList();
+
             structed.DaySessions = DailySessionCount;
-            structed.userID = PlayerGuid;
+
+            structed.userID = BSID;
             structed.userisNew = IsNew;
             structed.appisNew = IsNewGame;
+
             structed.userAppDownladedDate = AppDownloadedDate;
             structed.userAppDownladedDate_Local = AppDownloadedDate_Local;
             structed.userCountry = country; // use local in start is aldready pulled
             structed.userUseVpn = VpnState;
             structed.userTestGroup = GroupOfTest;
-            structed.TotalSessionCount = DailySessionCount;
+
+            structed.TotalPlayedTimes = TotalPlayTime;
             structed.TotalRevenue = TotalRevenue;
             structed.TotalSessionCount = TotalSession;
 
@@ -175,26 +175,33 @@ namespace AsCrone
             {
                 DailySessionCount = inCome.DaySessions;
             }
+            else
+            {
+                DailySessionCount = 0;
+            }
+
+            InsertListToQueue(inCome.userRequests);
 
             LastSavedDay = inCome.SaveLogDay;
+
+            BSID = inCome.userID;
             IsNew = inCome.userisNew;
             IsNewGame = inCome.appisNew;
-            PlayerGuid = inCome.userID;
+
             AppDownloadedDate = inCome.userAppDownladedDate;
             AppDownloadedDate_Local = inCome.userAppDownladedDate_Local;
             Country = inCome.userCountry;
             VpnState = inCome.userUseVpn;
             GroupOfTest = inCome.userTestGroup;
+
             TotalRevenue = inCome.TotalRevenue;
-            DailySessionCount = inCome.DaySessions;
             TotalPlayTime = inCome.TotalPlayedTimes;
+            TotalSession = inCome.TotalSessionCount;
         }
 
 
-
-
-
         #region Private Fields
+
         [Tooltip("Collection Name")] private string gameCollectionName;
         [Tooltip("Target Name")] private string gameStockName;
         [SerializeField, Tooltip("Player Setting Product Name")] private string gameId;
@@ -203,7 +210,7 @@ namespace AsCrone
         [SerializeField, Tooltip("OS Version")] private string osVersion;
         [SerializeField, Tooltip("Device Manufacturer Identity")] private string deviceModel;
         [SerializeField, Tooltip("Player Setting Version")] private string appReleaseVersion;
-        [SerializeField, Tooltip("Player Unique ID")] private string playerGuid;
+        [SerializeField, Tooltip("Player Unique ID")] private string bsID;
         [SerializeField, Tooltip("Send Automatic Register Request")] private bool isNew = true;
         [SerializeField, Tooltip("Is New APP")] private bool isNewApp = true;
         [SerializeField, Tooltip("App Store Download Date")] private string appDownloadedDate;
@@ -212,7 +219,7 @@ namespace AsCrone
         [SerializeField, Tooltip("DB Test Group")] private string groupOfTest;
         [SerializeField, Tooltip("Chek For Day Passed")] private int lastSavedDay;
         [SerializeField, Tooltip("Per Day Session Count")] private int dailySessionCount;
-        [SerializeField, Tooltip("Per Day Session Elapsed Second")] private double sessionElapsedMs;
+        [SerializeField, Tooltip("Per Day Session Elapsed Second")] private int sessionElapsedSec;
         [SerializeField, Tooltip("Vpn State")] private bool vpnState;
 
         [SerializeField, Tooltip("Level Pack")] private int level;
@@ -234,9 +241,8 @@ namespace AsCrone
         [SerializeField, Tooltip("Ads-Started(Interstitial)")] private int adsInterstitial_startedCount;
 
         [SerializeField, Tooltip("Ads-Success(Banner)")] private int adsBanner_successCount;
+
         #endregion
-
-
 
         #region Device Info
 
@@ -310,11 +316,11 @@ namespace AsCrone
             }
         }
 
-        public double SessionPlayTimme
+        public int SessionPlayTimme
         {
-            get => sessionElapsedMs; set
+            get => sessionElapsedSec; set
             {
-                sessionElapsedMs = value;
+                sessionElapsedSec = value;
                 TotalPlayTime += value;
             }
         }
@@ -324,11 +330,9 @@ namespace AsCrone
 
         #endregion
 
-
-
         #region Analytic-Info
 
-        internal string PlayerGuid { get => playerGuid; set { playerGuid = value; } }
+        internal string BSID { get => bsID; set { bsID = value; } }
         internal string GroupOfTest { get => groupOfTest; set => groupOfTest = value; }
         internal string AppReleaseVersion
         {
@@ -410,18 +414,28 @@ namespace AsCrone
 
         #endregion
 
-
-
-
-        public void ExecuteWebApiRequest()
+        public async void InsertListToQueue(List<byte[]> requestList)
         {
-            if (locater == null)
-            {
-                locater = new GameObject("IPN-WEB_API");
-                locater.AddComponent<IPnAPI>();
-                locater.GetComponent<IPnAPI>().RegisterBlock(this);
-            }
+            await ListToQueueAsync(requestList);
+        }
 
+        private Task ListToQueueAsync(List<byte[]> requestList)
+        {
+            return Task.Run(() =>
+            {
+                for (int i = requestList.Count; i < 0; i--)
+                {
+                    requestQueue.Enqueue(requestList[i]);
+                }
+            });
+        }
+
+        private void ExecuteWebApiRequest()
+        {
+
+            GameObject locater = new GameObject("IPN-WEB_API");
+            locater.AddComponent<IPnAPI>();
+            locater.GetComponent<IPnAPI>().RegisterBlock(this);
         }
 
         public void ExecuteAStopwatch(StopWatchSubject stopWatchSubject)
@@ -434,7 +448,6 @@ namespace AsCrone
                 handler.SetActive(true);
                 return;
             }
-
 
             handler = new GameObject($"{stopWatchSubject}-API");
             handler.AddComponent<WatchAPI>();
@@ -480,8 +493,6 @@ namespace AsCrone
             Debug.Log($"[GAME ID] {gameId}");
         }
 
-
-
         protected void GetOS_Mobile()
         {
             var osInfo = SystemInfo.operatingSystem;
@@ -498,8 +509,6 @@ namespace AsCrone
 #endif
 
         }
-
-
 
 
         public void SaveInQueue(byte[] request)
