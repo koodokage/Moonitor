@@ -6,10 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using UnityEngine;
-using AppLovinMax.ThirdParty.MiniJson;
-
-
-
+using AppLovinMax.ThirdParty.MiniJson; 
 
 public class MaxSdkCallbacks : MonoBehaviour
 {
@@ -46,7 +43,6 @@ public class MaxSdkCallbacks : MonoBehaviour
             _onVariablesUpdatedEvent -= value;
         }
     }
-
 
     // Fire when the Consent Dialog has been dismissed.
     private static Action _onSdkConsentDialogDismissedEvent;
@@ -270,18 +266,15 @@ public class MaxSdkCallbacks : MonoBehaviour
         /// </summary>
         public static event Action<string, MaxSdkBase.AdInfo> OnAdRevenuePaidEvent
         {
-
             add
             {
                 LogSubscribedToEvent("OnRewardedAdRevenuePaidEvent");
                 _onRewardedAdRevenuePaidEvent += value;
-
             }
             remove
             {
                 LogUnsubscribedToEvent("OnRewardedAdRevenuePaidEvent");
                 _onRewardedAdRevenuePaidEvent -= value;
-
             }
         }
 
@@ -1371,6 +1364,8 @@ public class MaxSdkCallbacks : MonoBehaviour
 #if UNITY_EDITOR
     public static void EmitSdkInitializedEvent()
     {
+        if(_onSdkInitializedEvent == null) return;
+
         var sdkConfiguration = new MaxSdkBase.SdkConfiguration();
         sdkConfiguration.ConsentDialogState = MaxSdkBase.ConsentDialogState.Unknown;
         sdkConfiguration.AppTrackingStatus = MaxSdkBase.AppTrackingStatus.Authorized;

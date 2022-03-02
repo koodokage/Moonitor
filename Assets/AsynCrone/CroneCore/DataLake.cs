@@ -4,25 +4,64 @@ using System.Linq;
 using System.Threading.Tasks;
 using AsCrone.Module;
 using AsCrone.Transmision;
-using BSS;
+using UnityEditor;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
 namespace AsCrone
 {
-    public class DataLake : SO_Data
+#if UNITY_EDITOR
+    [CustomEditor(typeof(DataLake), true), CanEditMultipleObjects]
+    public class DataLakeEditor : Editor
+    {
+
+        public override void OnInspectorGUI()
+        {
+            base.OnInspectorGUI();
+            DataLake data = (DataLake)target;
+            EditorGUILayout.LabelField("", GUI.skin.horizontalSlider);
+
+            if (GUILayout.Button("Save Data"))
+            {
+                data.Saving();
+            }
+            EditorGUILayout.LabelField("", GUI.skin.horizontalSlider);
+
+            if (GUILayout.Button("Load Data"))
+            {
+                data.Loading();
+            }
+            EditorGUILayout.LabelField("", GUI.skin.horizontalSlider);
+
+            if (GUILayout.Button("Delete Data"))
+            {
+                data.Delete();
+            }
+            EditorGUILayout.LabelField("", GUI.skin.horizontalSlider);
+
+        }
+
+    }
+#endif
+    public class DataLake : ScriptableObject, ISaveableScript
     {
         Dictionary<StopWatchSubject, GameObject> stopWatchs = new Dictionary<StopWatchSubject, GameObject>();
         internal Queue<byte[]> requestQueue = new Queue<byte[]>();
+
+        public string FileName => "Dlake";
+        [Header("Settings"),Space(5)]
+        [Tooltip("Certificate issued by the Publisher")]public string CertificateID;
+        [Tooltip("Data Center authorized by the Publisher")] public DataCenter dataCenter;
+        [Tooltip("Server Machine authorized by the Publisher")] public DataSlot dataSlot;
+
         internal void OnAwake()
         {
+            CroneAPI.SetCompanyId(CertificateID, true);
             sessionElapsedSec = 0;
             ExecuteActionManager();
             ExecuteAStopwatch(StopWatchSubject.Session);
 
-            //LoadLocalData();
-
-            // LOAD DATA
+            Loading();
 
             if (string.IsNullOrEmpty(Country))
                 ExecuteWebApiRequest();
@@ -37,7 +76,6 @@ namespace AsCrone
             }
 
 
-            CroneAPI.SetCompanyId("PAN", true);
             GetGameid();
             GetDeviceModel();
             GetReleaseVersion();
@@ -46,8 +84,7 @@ namespace AsCrone
             DailySessionCount++;
             Debug.Log($"DAY : {Day}");
 
-            // SAVE DATA
-            //SaveLocalData();
+            Saving();
         }
 
         private void ExecuteActionManager()
@@ -57,10 +94,8 @@ namespace AsCrone
             CroneAPI.CroneEnventHandler = eventManager.GetComponent<AsynCroneEvents>();
         }
 
-        public override void ResetData()
+        public  void Reset()
         {
-            base.ResetData();
-            fileName = "Dlake";
             Country = string.Empty;
             GroupOfTest = string.Empty;
             BSID = string.Empty;
@@ -94,16 +129,12 @@ namespace AsCrone
             ADSInterstitial_successCount = 0;
         }
 
-
-
         internal void SaveQueueInLocal()
         {
-            SaveLocalData();
+            Saving();
         }
-
-
         [Serializable]
-        public struct StructedData : IData
+        public struct StructedData
         {
             public List<byte[]> userRequests;
             public bool userisNew;
@@ -120,12 +151,8 @@ namespace AsCrone
             public int DaySessions;
             public int SaveLogDay;
         }
-
-
-        public override void SaveLocalData()
+        public void Saving()
         {
-            base.SaveLocalData();
-            BinnarySaveSystem bss = new BinnarySaveSystem(fileName);
             StructedData structed = new StructedData();
 
             if (LastSavedDay != Day)
@@ -152,23 +179,20 @@ namespace AsCrone
             structed.TotalPlayedTimes = TotalPlayTime;
             structed.TotalRevenue = TotalRevenue;
             structed.TotalSessionCount = TotalSession;
-
-            bss.Save(structed);
+            AsyncJob.AsyncSave(structed,FileName);
 
         }
-
-        public override void LoadLocalData()
+        public  void Loading()
         {
-            base.LoadLocalData();
-            BinnarySaveSystem bss = new BinnarySaveSystem(fileName);
+            if (!BinnarySaveSystem.DataExisted(FileName)) return;
             StructedData sctData = new StructedData();
-            var conntiueToRead = bss.DataExist();
-            if (!conntiueToRead) return;
-            StructedData commingData = (StructedData)bss.Load(sctData);
-
+            var commingData = AsyncJob.AsyncLoad(sctData,FileName);
             InitializeData(commingData);
         }
-
+        public void Delete()
+        {
+            AsyncJob.AsyncDelete(FileName);
+        }
         private void InitializeData(StructedData inCome)
         {
             if (lastSavedDay == Day)
@@ -204,7 +228,7 @@ namespace AsCrone
 
         [Tooltip("Collection Name")] private string gameCollectionName;
         [Tooltip("Target Name")] private string gameStockName;
-        [SerializeField, Tooltip("Player Setting Product Name")] private string gameId;
+        [Header("Serialized"),Space(5),SerializeField, Tooltip("Player Setting Product Name")] private string gameId;
         [SerializeField, Tooltip("Player Setting Company Name")] private string companyId;
         [SerializeField, Tooltip("OS Type")] private string deviceOS;
         [SerializeField, Tooltip("OS Version")] private string osVersion;
@@ -412,6 +436,7 @@ namespace AsCrone
             }
         }
 
+
         #endregion
 
         public async void InsertListToQueue(List<byte[]> requestList)
@@ -510,13 +535,10 @@ namespace AsCrone
 
         }
 
-
         public void SaveInQueue(byte[] request)
         {
             requestQueue.Enqueue(request);
-            //Save Local Data
         }
-
 
         internal void SaveInQueue_NotReachable(ITransmitorData request)
         {
@@ -535,8 +557,7 @@ namespace AsCrone
             //Save Local Data
         }
 
-
-
+      
     }
 
 

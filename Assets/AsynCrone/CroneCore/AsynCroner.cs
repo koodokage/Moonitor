@@ -6,31 +6,46 @@ using AsCrone.Transmision;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
+public enum DataSlot
+{
+    ROOM1 = 3001,
+    ROOM2 = 3002
+}
+
+public enum DataCenter
+{
+    TR_IST,
+    TR_ANK,
+    USA_YORK
+}
+
 namespace AsCrone
 {
     [Serializable]
-    public  class AsynCroner 
+    public class AsynCroner
     {
-        [SerializeField]private  ResponseData remoteResponse;
-        private  CronePerformer cronePerformer;
+        [SerializeField] private ResponseData remoteResponse;
+        CronePerformer cronePerformer;
 
-        public  bool rigidConnected;
+        public bool rigidConnected;
         public bool callBacked = false;
         public bool threadCanceled = false;
 
-        const string _ADRESS = "213.159.7.193";
-        const int _SLOT = 3001;
+        string _ADRESS;
+        int _SLOT;
 
-         TcpClient _client;
-         Thread threadReceiver;
-         byte[] dataBlock = new byte[2056];
-         byte[] sendingBuffer = null;
+        TcpClient _client;
+        Thread threadReceiver;
+        byte[] dataBlock = new byte[2056];
+        byte[] sendingBuffer = null;
 
-        public  ResponseData RemoteResponse { get => remoteResponse; }
-        public  CronePerformer CronePerforms { get => cronePerformer; }
+        public ResponseData RemoteResponse { get => remoteResponse; }
+        public CronePerformer CronePerforms { get => cronePerformer; }
 
-         public void OnStart(CronePerformer _cronePerformer)
+        public void OnStart(CronePerformer _cronePerformer)
         {
+            InitializeDataCenter(_cronePerformer.selectedRoom, _cronePerformer.selectedCenter);
+
             this.cronePerformer = _cronePerformer;
 
             callBacked = true;
@@ -40,6 +55,24 @@ namespace AsCrone
             threadReceiver.IsBackground = true;
             threadReceiver.Start();
 
+        }
+
+        private void InitializeDataCenter(DataSlot room, DataCenter center)
+        {
+            switch (center)
+            {
+                case DataCenter.TR_IST:
+                    _ADRESS = "213.159.7.193";
+                    break;
+                case DataCenter.TR_ANK:
+                    _ADRESS = "213.159.7.193";
+                    break;
+                case DataCenter.USA_YORK:
+                    _ADRESS = "213.159.7.193";
+                    break;
+            }
+
+            _SLOT = (int)room;
         }
 
         void JOB_Charger()
@@ -97,7 +130,7 @@ namespace AsCrone
                         catch (Exception)
                         {
                             //ConsoleLog($"Send Phase Fail {ex.Message}");
-                            if(sendingBuffer != null && cronePerformer.RegisteredGame())
+                            if (sendingBuffer != null && cronePerformer.RegisteredGame())
                                 cronePerformer.ReturnDataInQueue(sendingBuffer);
                             break;
                         }
@@ -106,7 +139,7 @@ namespace AsCrone
                     {
                         Thread.Sleep(1000);
                         connectionAttempt++;
-                        if(connectionAttempt >= 5)
+                        if (connectionAttempt >= 5)
                         {
                             rigidConnected = false;
                             callBacked = true;
@@ -140,7 +173,7 @@ namespace AsCrone
         void StartAsyncCrone()
         {
             _client = new TcpClient();
-                _client.BeginConnect(_ADRESS, _SLOT, new AsyncCallback(AcceptingCallback), _client);
+            _client.BeginConnect(_ADRESS, _SLOT, new AsyncCallback(AcceptingCallback), _client);
         }
 
         void AcceptingCallback(IAsyncResult asyncResult)

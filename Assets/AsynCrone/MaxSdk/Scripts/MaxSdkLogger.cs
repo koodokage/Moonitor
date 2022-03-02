@@ -33,7 +33,7 @@ public class MaxSdkLogger
     {
         Debug.LogWarning("Warning [" + SdkTag + "] " + message);
     }
-
+    
     /// <summary>
     /// Log warning messages when verbose logging is enabled.
     ///

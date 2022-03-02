@@ -1,8 +1,5 @@
 fileFormatVersion: 2
-guid: b18c9d0666b074ae4aa5148ff0182c2c
-labels:
-- al_max
-- al_max_export_path-MaxSdk/Scripts/BSS/ConcreteDataLogger.cs
+guid: bb699c92745914cac8ad481294cef55f
 MonoImporter:
   externalObjects: {}
   serializedVersion: 2

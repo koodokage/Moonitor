@@ -1,8 +1,5 @@
 fileFormatVersion: 2
-guid: b6ad58f86df424fddaacd09aac867896
-labels:
-- al_max
-- al_max_export_path-MaxSdk/Scripts/BSS/IData.cs
+guid: b18c9d0666b074ae4aa5148ff0182c2c
 MonoImporter:
   externalObjects: {}
   serializedVersion: 2

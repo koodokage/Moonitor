@@ -1,8 +1,5 @@
 fileFormatVersion: 2
-guid: 3c42fd8791e244a49a671a4b3a6890c8
-labels:
-- al_max
-- al_max_export_path-MaxSdk/Scripts/BSS/BinnarySaveSystem.cs
+guid: 74ec552ad065e43c5bec6abcc4baaf95
 MonoImporter:
   externalObjects: {}
   serializedVersion: 2

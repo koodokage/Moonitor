@@ -42,6 +42,8 @@ namespace AsCrone.Transmision
         private Stopwatch pingWatch;
         internal string PlayerID { get => dataBlock.BSID; set => dataBlock.BSID = value; }
         internal DataLake SetDataLake { set => dataBlock = value; }
+        internal DataSlot selectedRoom { get => dataBlock.dataSlot; }
+        internal DataCenter selectedCenter { get => dataBlock.dataCenter; }
 
 
         private void Initialization()
@@ -122,7 +124,7 @@ namespace AsCrone.Transmision
 
                 }
                 dataBlock.IsNew = false;
-                dataBlock.SaveLocalData();
+                dataBlock.Saving();
             }
 
         }

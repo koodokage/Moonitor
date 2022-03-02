@@ -18,7 +18,7 @@ namespace AsCrone
 
         public static void SetCompanyId(string companyId,bool inTestMode)
         {
-            if (inTestMode)
+            if (inTestMode || string.IsNullOrEmpty(companyId))
             {
                 companyId = "TESTMODE";
             }

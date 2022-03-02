@@ -12,14 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a82b0132e3d3f44698d8d50db8f723c4, type: 3}
   m_Name: DataLake
   m_EditorClassIdentifier: 
-  fileName: 
+  CertificateID: 
+  dataCenter: 0
+  dataSlot: 3001
   gameId: 
   companyId: 
   deviceOS: 
   osVersion: 
   deviceModel: 
   appReleaseVersion: 
-  playerGuid: 
+  bsID: 
   isNew: 1
   isNewApp: 1
   appDownloadedDate: 
@@ -28,7 +30,7 @@ MonoBehaviour:
   groupOfTest: 
   lastSavedDay: 0
   dailySessionCount: 0
-  sessionElapsedMs: 0
+  sessionElapsedSec: 0
   vpnState: 0
   level: 0
   sub_level: 0

@@ -1,8 +1,5 @@
 fileFormatVersion: 2
-guid: d662873045b154646951b56d285d4f87
-labels:
-- al_max
-- al_max_export_path-MaxSdk/Scripts/BSS/UniqueMonoObjectBehaviour.cs
+guid: 3c42fd8791e244a49a671a4b3a6890c8
 MonoImporter:
   externalObjects: {}
   serializedVersion: 2
