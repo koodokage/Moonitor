@@ -16,6 +16,14 @@ public static class AsyncJob
     }
 
     /// <summary>
+    /// Saving Asyncrone Operations
+    /// </summary>
+    public static void AsyncOverrideSave<T>(T data, string fileName)
+    {
+        OverridedSaveAsync(data, fileName);
+    }
+
+    /// <summary>
     /// Loading Asyncrone Operations
     /// </summary>
     public static T AsyncLoad<T>(T data, string fileName)
@@ -30,7 +38,7 @@ public static class AsyncJob
     /// Deleting Name Based File Asyncrone Operations
     /// </summary>
     /// <param name="fileName"></param>
-    public static void AsyncDelete( string fileName)
+    public static void AsyncDelete(string fileName)
     {
         DeleteAsync(fileName);
     }
@@ -41,9 +49,9 @@ public static class AsyncJob
     /// <typeparam name="T"></typeparam>
     /// <param name="fileNames"></param>
     /// <param name="datas"></param>
-    public static  void SaveAllAsync<T>(string[] fileNames , T[] datas)
+    public static void SaveAllAsync<T>(string[] fileNames, T[] datas)
     {
-        Thread allSaver = new Thread(()=> BSS.SaveAll(fileNames, datas))
+        Thread allSaver = new Thread(() => BSS.SaveAll(fileNames, datas))
         {
             IsBackground = true
         };
@@ -77,7 +85,13 @@ public static class AsyncJob
         });
     }
 
-
+    private static async void OverridedSaveAsync<T>(T data, string fileName)
+    {
+        await Task.Run(() =>
+        {
+            BSS.OverridedSave(data, fileName);
+        });
+    }
 
     private static Task<T> LoadAsync<T>(T data, string fileName)
     {

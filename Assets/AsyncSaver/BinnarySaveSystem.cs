@@ -6,10 +6,10 @@ public class BinnarySaveSystem
 {
     public string path;
     static BinaryFormatter formatter;
-
+    static bool inWorkPhase;
     public BinnarySaveSystem()
     {
-        if(formatter == null)
+        if (formatter == null)
             formatter = new BinaryFormatter();
 
         path = Application.persistentDataPath + $"/BSS.";
@@ -19,11 +19,24 @@ public class BinnarySaveSystem
     public void Save<T>(T data, string fileName)
     {
         string pathLocal = $"{path}{fileName}";
-        FileStream streamer = new FileStream(pathLocal, FileMode.Create);
-        formatter.Serialize(streamer, data);
-        streamer.Close();
-        Debug.Log($"{fileName} SAVED !");
+        using (FileStream streamer = new FileStream(pathLocal, FileMode.Create))
+        {
+            formatter.Serialize(streamer, data);
+        }
+    }
 
+    public void OverridedSave<T>(T data, string fileName)
+    {
+        if (inWorkPhase)
+            return;
+
+        inWorkPhase = true;
+        string pathLocal = $"{path}{fileName}";
+        using (FileStream streamer = new FileStream(pathLocal, FileMode.Create))
+        {
+            formatter.Serialize(streamer, data);
+            inWorkPhase = false;
+        }
     }
 
     public T Load<T>(T data, string fileName)
