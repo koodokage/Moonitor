@@ -1,5 +1,10 @@
-# Moonitor
-Custom Cloud Async Monitoring Plugin :
+# Moonitor - Show Case
+
+Custom Cloud Async Monitoring Plugin (NOT COMPLETED!): 
+
+-Just Showing some code and structures
+
+::Target of this plugin::
 
 *App / Ads Analytics
 
